@@ -26,21 +26,23 @@ import numpy as np
 from random import seed
 from random import random
 from random import randint
+import os
 
-linearSpeed = 1
-angularSpeed = 1
+linearSpeed = 0.13
+angularSpeed = 0.13
 maxDistance = 5
 outputFile = open("dataTest.txt","w+")
 
 
+
 class GotoPoint():
     def __init__(self):
-        rospy.init_node('turtlebot3_pointop_key', anonymous=False)
+        rospy.init_node('turtlebot3_first_data', anonymous=False)
         rospy.on_shutdown(self.shutdown)
         self.cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=5)
         position = Point()
         move_cmd = Twist()
-        r = rospy.Rate(10)
+        r = rospy.Rate(1)
         self.tf_listener = tf.TransformListener()
         self.odom_frame = 'odom'
         seed(1)
@@ -61,11 +63,14 @@ class GotoPoint():
         outputFile.write("Test Data, Goal = " + str(goal_x) + ", " + str(goal_y) + "\n")
         distance = sqrt(pow(goal_x - position.x, 2) + pow(goal_y - position.y, 2))
 
+        self.cmd_vel.publish(Twist())
         while distance > 0.05:
             previousDistance = distance
             outputFile.write("Current Position: " + str(position.x) + ", " + str(position.y) + ", " + str(rotation) + "\n")
-            x_velocity = randint(-1, 1) * linearSpeed
-            z_angular = randint(-1, 1) * angularSpeed
+            #x_velocity = randint(-1, 1) * linearSpeed
+            #z_angular = randint(-1, 1) * angularSpeed
+            x_velocity = 1 * linearSpeed
+            z_angular = 0 * angularSpeed
             move_cmd.linear.x = x_velocity
             move_cmd.angular.z = z_angular
             self.cmd_vel.publish(move_cmd)
@@ -99,7 +104,6 @@ class GotoPoint():
 if __name__ == '__main__':
     try:
         while not rospy.is_shutdown():
-            print(msg)
             GotoPoint()
 
     except:
