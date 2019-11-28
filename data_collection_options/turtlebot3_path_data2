@@ -1,0 +1,112 @@
+#!/usr/bin/env python
+#################################################################################
+# Copyright 2018 ROBOTIS CO., LTD.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#################################################################################
+
+# Authors: Gilbert #
+
+import rospy
+from geometry_msgs.msg import Twist, Point, Quaternion
+import tf
+from math import radians, copysign, sqrt, pow, pi, atan2
+from tf.transformations import euler_from_quaternion
+import numpy as np
+from random import seed
+from random import random
+from random import randint
+import time
+import os
+
+linearSpeed = 0.13
+angularSpeed = 0.13
+maxDistance = 5
+decisionFrequency = 1
+outputFile = open("pathData2.txt","w+")
+
+
+
+class GotoPoint():
+    def __init__(self):
+        rospy.init_node('turtlebot3_path_data2', anonymous=False)
+        rospy.on_shutdown(self.shutdown)
+        self.cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=5)
+        position = Point()
+        move_cmd = Twist()
+        r = rospy.Rate(decisionFrequency)
+        self.tf_listener = tf.TransformListener()
+        self.odom_frame = 'odom'
+        seed(time.time())
+
+        try:
+            self.tf_listener.waitForTransform(self.odom_frame, 'base_footprint', rospy.Time(), rospy.Duration(1.0))
+            self.base_frame = 'base_footprint'
+        except (tf.Exception, tf.ConnectivityException, tf.LookupException):
+            try:
+                self.tf_listener.waitForTransform(self.odom_frame, 'base_link', rospy.Time(), rospy.Duration(1.0))
+                self.base_frame = 'base_link'
+            except (tf.Exception, tf.ConnectivityException, tf.LookupException):
+                rospy.loginfo("Cannot find transform between odom and base_link or base_footprint")
+                rospy.signal_shutdown("tf Exception")
+
+        (position, rotation) = self.get_odom()
+        (goal_x, goal_y) = (2*(random() - 0.5)*maxDistance,2*(random() - 0.5)*maxDistance)
+        outputFile.write("Test Data with frequency: " + str(decisionFrequency) + " Hz, Goal = " + str(goal_x) + ", " + str(goal_y) + "\n")
+        distance = sqrt(pow(goal_x - position.x, 2) + pow(goal_y - position.y, 2))
+
+        self.cmd_vel.publish(Twist())
+		r.sleep()
+        while distance > 0.05:
+            previousDistance = distance
+            outputFile.write("Current Position: " + str(position.x) + ", " + str(position.y) + ", " + str(rotation) + "\n")
+            x_velocity = (randint(-5,5)/5) * linearSpeed
+            z_angular = (randint(-5,5)/5) * angularSpeed
+            move_cmd.linear.x = x_velocity
+            move_cmd.angular.z = z_angular
+            self.cmd_vel.publish(move_cmd)
+            outputFile.write("Chosen Speed: " + str(x_velocity) + ", " + str(z_angular) + "\n")
+            r.sleep()
+            (position, rotation) = self.get_odom()
+            distance = sqrt(pow(goal_x - position.x, 2) + pow(goal_y - position.y, 2))
+            outputFile.write("Reward: " + str(previousDistance - distance) + "\n")
+
+        rospy.loginfo("Stopping the robot...")
+        self.cmd_vel.publish(Twist())
+
+    def get_odom(self):
+        try:
+            (trans, rot) = self.tf_listener.lookupTransform(self.odom_frame, self.base_frame, rospy.Time(0))
+            rotation = euler_from_quaternion(rot)
+
+        except (tf.Exception, tf.ConnectivityException, tf.LookupException):
+            rospy.loginfo("TF Exception")
+            return
+
+        return (Point(*trans), rotation[2])
+
+
+    def shutdown(self):
+        outputFile.close()
+        self.cmd_vel.publish(Twist())
+        rospy.sleep(1)
+
+
+if __name__ == '__main__':
+    try:
+        while not rospy.is_shutdown():
+            GotoPoint()
+
+    except:
+        rospy.loginfo("shutdown program.")
+

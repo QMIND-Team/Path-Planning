@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="turtlebot3_qmind" type="turtlebot3_path_data1" name="turtlebot3_path_data1"  output="screen">
+  </node>
+</launch>
