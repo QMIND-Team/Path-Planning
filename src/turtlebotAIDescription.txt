@@ -1,0 +1,31 @@
+Altered Files:
+
+turtlebot3/turtlebot3_dqn/nodes/moving_obstacle.py
+	- changed obstacle movement for stage 5
+turtlebot3_simulations/turtlebot3_gazebo/models/turtlebot3_square/model.sdf
+	- Changed the world dimensions
+turtlebot3/turtlebot3_dqn/nodes/turtlebot3_dqn_stage_#.py
+	- Added epFlag
+	- Removed if dones
+	- Removed target network
+	- Removed inputs so it was only lidar data
+turtlebot3/turtlebot3_dqn/src/turtlebot3_dqn/environment_stage_#.py
+	- Changed reward system drastically
+	- Removed the unwanted inputs from the getState function (as we changed the model and no longer need them)
+	- Restrcuted for new arena size
+
+Parameters:
+
+- In turtlebot3_dqn_stage_# (found in /turtlebot3/turtlebot3_dqn/nodes):
+	- load_model: whether or not to load a previous model
+	- epFlag: If loading model, whether or not to use stored epsilon model (True means use models, False means use parameter defined below)
+	- load_episode: If loading model, what eppisode you are loading. If not, set as 0
+	- epsilon: probability of random movement during training
+	- epsilon_decay: rate of lowering epsilon value
+	- epsilon_min: minimum epsilon value
+
+How to run:
+
+- Open terminal and run "roscore"
+- Open second terminal and run "roslaunch turtlebot3_gazebo turtlebot3_stage_#.launch" # = stage number
+- Open third terminal and run "roslaunch turtlebot3_dqn turtlebot3_dqn_stage_#.launch" # = stage number
